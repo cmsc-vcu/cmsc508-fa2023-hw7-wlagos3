@@ -1,6 +1,6 @@
 ---
 title: Homework 7 - Creating a resume database
-author: (your name goes here!)
+author: William Lagos
 date: last-modified
 format:
     html:
@@ -10,9 +10,8 @@ format:
         code-copy: true
 ---
 
-(include a brief description of what is in this document)
+This document contains descriptions and the data contained in each table, as well as sample queries for the database.
 
-(Please clean up any comments that I included.  This is a scaffold document.)
 
 GITHUB URL:  <your URL goes here!>
 
@@ -92,34 +91,62 @@ except Exception as e:
 
 ## Overview and description
 
-(briefly describe the project and the database)
+The project's goal is to capture the collective skills and certifications of people within a company, which will help in quickly finding people with specific skills.
 
 ## Crows-foot diagram
 
-(add a description of the diagram and what the reader is seeing.)
+This is a crow's foot diagram of the database, showing the entities and their relations.
 
 ```{mermaid}
-%%| echo: false
 erDiagram
-    CUSTOMER ||--o{ ORDER : places
-    CUSTOMER }|..|{ DELIVERY-ADDRESS : uses
-    CUSTOMER{
-        int id
+    PEOPLE ||--o{ PEOPLESKILLS : "has"
+    SKILLS ||--o{ PEOPLESKILLS : "required by"
+    PEOPLE ||--o{ PEOPLEROLES : "has"
+    ROLES ||--o{ PEOPLEROLES : "assigned to"
+    PEOPLE {
+        int id PK "Primary Key"
         string first_name
         string last_name
+        string email
+        string linkedin_url
+        string headshot_url
+        string discord_handle
+        string brief_bio
+        date date_joined
     }
-    DELIVERY-ADDRESS {
-        int id
+    SKILLS {
+        int id PK "Primary Key"
+        string name
+        string description
+        string tag
+        string url
+        string time_commitment
     }
+    PEOPLESKILLS {
+        int id PK "Primary Key"
+        int skills_id FK "Foreign Key to SKILLS"
+        int people_id FK "Foreign Key to PEOPLE"
+        date date_acquired
+    }
+    ROLES {
+        int id PK "Primary Key"
+        string name
+        int sort_priority
+    }
+    PEOPLEROLES {
+        int id PK "Primary Key"
+        int people_id FK "Foreign Key to PEOPLE"
+        int role_id FK "Foreign Key to ROLES"
+        date date_assigned
+    }
+
 ```
 
 ## Examples of data in the database
 
-For the people, skills, and roles tables, provide a description of each table and it's contents. Then provide a listing of the entire table.
-
 ### People table
 
-The *people* table contains elements that describe ... 
+The *people* table contains elements that describe a person, including their name, email, pictures, and linkedin urls.
 
 Below is a list of data in the *people* table.
 
@@ -142,28 +169,48 @@ df
 
 ### Skills table
 
-The *skills* table contains elements that describe ... 
+The *skills* table contains elements that describe the possible skills that a person can have.
 
 Below is a list of data in the *skills* table.
 
 ```{python}
 #| echo: false
 #| eval: true
-
+sql = f"""
+select * from skills;
+"""
 ## Add code to list roles table here
+try:
+    df = pd.read_sql(sql,cnx)
+    df
+except Exception as e:
+    message = str(e)
+    print(f"An error occurred:\n\n{message}\n\nIgnoring and moving on.")
+    df = pd.DataFrame()
+df
 ```
 
 ### Roles table
 
-The *roles* table contains elements that describe ... 
+The *roles* table contains elements that describe the possible roles a person can have.
 
 Below is a list of data in the *roles* table.
 
 ```{python}
 #| echo: false
 #| eval: true
-
+sql = f"""
+select * from roles;
+"""
 ## Add code to list roles table here
+try:
+    df = pd.read_sql(sql,cnx)
+    df
+except Exception as e:
+    message = str(e)
+    print(f"An error occurred:\n\n{message}\n\nIgnoring and moving on.")
+    df = pd.DataFrame()
+df
 ```
 
 
@@ -201,29 +248,234 @@ df
 
 ### List people names and email addresses ordered by last_name
 
+```{python}
+sql = f"""
+SELECT first_name, last_name, email
+FROM people
+ORDER BY last_name;
+"""
+```
+
+
+(and here is a sample result from the query)
+
+```{python}
+#| echo: false
+#| eval: true
+try:
+    df = pd.read_sql(sql,cnx)
+    df
+except Exception as e:
+    message = str(e)
+    print(f"An error occurred:\n\n{message}\n\nIgnoring and moving on.")
+    df = pd.DataFrame()
+df
+
+```
+
+
 
 ### List skill names of Person 1
+```{python}
+sql = f"""
+SELECT s.name
+FROM skills s
+JOIN peopleskills ps ON s.id = ps.skills_id
+WHERE ps.people_id = 1;
+"""
+```
+
+
+(and here is a sample result from the query)
+
+```{python}
+#| echo: false
+#| eval: true
+try:
+    df = pd.read_sql(sql,cnx)
+    df
+except Exception as e:
+    message = str(e)
+    print(f"An error occurred:\n\n{message}\n\nIgnoring and moving on.")
+    df = pd.DataFrame()
+df
+
+```
+
 
 
 ### List people names with Skill 6
+```{python}
+sql = f"""
+SELECT p.first_name, p.last_name
+FROM people p
+JOIN peopleskills ps ON p.id = ps.people_id
+WHERE ps.skills_id = 6;
+"""
+```
+
+
+(and here is a sample result from the query)
+
+```{python}
+#| echo: false
+#| eval: true
+try:
+    df = pd.read_sql(sql,cnx)
+    df
+except Exception as e:
+    message = str(e)
+    print(f"An error occurred:\n\n{message}\n\nIgnoring and moving on.")
+    df = pd.DataFrame()
+df
+
+```
 
 
 ### List people with a DEVELOPER role
 
+```{python}
+sql = f"""
+SELECT p.first_name, p.last_name
+FROM people p
+JOIN peopleroles pr ON p.id = pr.people_id
+JOIN roles r ON pr.role_id = r.id
+WHERE r.name = 'Developer';
+"""
+```
+
+
+(and here is a sample result from the query)
+
+```{python}
+#| echo: false
+#| eval: true
+try:
+    df = pd.read_sql(sql,cnx)
+    df
+except Exception as e:
+    message = str(e)
+    print(f"An error occurred:\n\n{message}\n\nIgnoring and moving on.")
+    df = pd.DataFrame()
+df
+
+```
 
 ### List names and email addresses of people without skills
+```{python}
+sql = f"""
+SELECT p.first_name, p.last_name, p.email
+FROM people p
+LEFT JOIN peopleskills ps ON p.id = ps.people_id
+WHERE ps.id IS NULL;
+"""
+```
+
+
+(and here is a sample result from the query)
+
+```{python}
+#| echo: false
+#| eval: true
+try:
+    df = pd.read_sql(sql,cnx)
+    df
+except Exception as e:
+    message = str(e)
+    print(f"An error occurred:\n\n{message}\n\nIgnoring and moving on.")
+    df = pd.DataFrame()
+df
+
+```
 
 
 ### List names and tags of unused skills
 
+```{python}
+sql = f"""
+SELECT s.name, s.tag
+FROM skills s
+LEFT JOIN peopleskills ps ON s.id = ps.skills_id
+WHERE ps.id IS NULL;
+"""
+```
+
+
+(and here is a sample result from the query)
+
+```{python}
+#| echo: false
+#| eval: true
+try:
+    df = pd.read_sql(sql,cnx)
+    df
+except Exception as e:
+    message = str(e)
+    print(f"An error occurred:\n\n{message}\n\nIgnoring and moving on.")
+    df = pd.DataFrame()
+df
+
+```
 
 ### List people names and skill names with the BOSS role
 
+```{python}
+sql = f"""
+SELECT p.first_name, p.last_name, s.name AS skill_name
+FROM people p
+JOIN peopleroles pr ON p.id = pr.people_id
+JOIN roles r ON pr.role_id = r.id
+JOIN peopleskills ps ON p.id = ps.people_id
+JOIN skills s ON ps.skills_id = s.id
+WHERE r.name = 'Boss';
+"""
+```
+
+
+(and here is a sample result from the query)
+
+```{python}
+#| echo: false
+#| eval: true
+try:
+    df = pd.read_sql(sql,cnx)
+    df
+except Exception as e:
+    message = str(e)
+    print(f"An error occurred:\n\n{message}\n\nIgnoring and moving on.")
+    df = pd.DataFrame()
+df
+
+```
 
 ### List ids and names of unused roles
+```{python}
+sql = f"""
+SELECT r.id, r.name
+FROM roles r
+WHERE r.id NOT IN (SELECT DISTINCT role_id FROM peopleroles);
+"""
+```
+
+
+(and here is a sample result from the query)
+
+```{python}
+#| echo: false
+#| eval: true
+try:
+    df = pd.read_sql(sql,cnx)
+    df
+except Exception as e:
+    message = str(e)
+    print(f"An error occurred:\n\n{message}\n\nIgnoring and moving on.")
+    df = pd.DataFrame()
+df
+
+```
 
 
 ## Reflection
 
-(Write a paragraph expressing your thoughts, feelings, and insights about your experience with this assignment.  Pause and breath before writing - I'm trying to encourage critical thinking and self-awareness while allowing you to explore the connections between theory and practice. And yes, delete this paragraph.)
+This assignment was fine. I thought it was mostly straight forward and helped improve my skills. It was a little bit tedious with coming up and adding all of the data, and also I had a hard time with poetry this time for some reason which was extremely frustrating, but other than that everything went well.
 
